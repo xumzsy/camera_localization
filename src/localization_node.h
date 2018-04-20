@@ -1,8 +1,8 @@
 
 #include <vector>
+#include <ros/ros.h>
 
 #include "opencv.h"
-#include "ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "sensor_msgs/Image.h"
 
@@ -32,11 +32,14 @@ private:
     // Update the feature map
     void UpdateFeatureMap();
     
+    // Publish camera pose
+    void PublishCameraPoseCallback();
+    
     ::ros::NodeHandle node_handle_;
     ::ros::Subscriber raw_image_subscriber_;
     ::ros::Publisher camera_pose_publisher_;
     
-    const int max_feature_num;
+    const int max_feature_num_;
     
     // feature map ? considering matching, how to maintain it
     FeatureMap feature_map_;

@@ -1,15 +1,14 @@
 
-#include <cv_bridge/cv_bridge.h>
+//#include <cv_bridge/cv_bridge.h>
 
 #include "localization_node.h"
 
-
-namespace CameraLocalizationNode {
+namespace CameraLocalization {
     
 CameraLocalizationNode::CameraLocalizationNode(int max_feature_num)
     : max_feature_num_(max_feature_num){
     raw_image_subscriber_ = node_handle_.subscribe<sensor_msgs::Image>
-        ("/image", 10, &CameraLocalizationNode::RawImageCallback, this);
+        ("/usb_cam/image_raw", 10, &CameraLocalizationNode::RawImageCallback, this);
     camera_pose_publisher_ = node_handle_.advertise<geometry_msgs::PoseStamped>("/pose", 10);
 }
     
@@ -30,6 +29,7 @@ void CameraLocalizationNode::RawImageCallback(const ::sensor_msgs::Image::ConstP
 
 void CameraLocalizationNode::CalculatePose(cv_bridge::CvImageConstPtr cv_ptr){
     // Calculate key points and descriptor
+    /*
     cv::Ptr<cv::xfeatures2d::SURF> detector = cv::xfeatures2d::SURF::create();
     detector->setHessianThreshold(minHessian);
     
@@ -37,11 +37,14 @@ void CameraLocalizationNode::CalculatePose(cv_bridge::CvImageConstPtr cv_ptr){
     Mat descriptors_1, descriptors_2;
     detector->detectAndCompute( img_1, Mat(), keypoints_1, descriptors_1 );
     detector->detectAndCompute( img_2, Mat(), keypoints_2, descriptors_2 );
+    */
+    std::cout<<(cv_ptr==nullptr)<<std::endl;
 }
 
 void CameraLocalizationNode::UpdateFeatureMap(){
     
 }
+
     
 } // namespace CameraLocalizationNode
 

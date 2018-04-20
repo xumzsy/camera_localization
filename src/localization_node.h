@@ -1,33 +1,35 @@
 
 #include <vector>
 #include <ros/ros.h>
+#include <cv_bridge/cv_bridge.h>
+#include <opencv/cv.h>
 
-#include "opencv.h"
+//#include "opencv.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "sensor_msgs/Image.h"
 
-namespace CameraLocalizationNode {
+namespace CameraLocalization {
     
 
 class CameraLocalizationNode{
     
 public:
-    CameraLocalizationNode();
+    CameraLocalizationNode(int max_feature_num);
     
 private:
     struct FeatureMap{
-        ::std::vector<Point> points;
-        ::std::vector<Descriptor> descriptors;
+        ::std::vector</*Point*/int> points;
+        ::std::vector</*Descriptor*/int> descriptors;
         ::std::vector<int> history_time;
         ::std::vector<int> matched_times;
     };
     
     // Receive a image, transform it into opencv img and address it
-    void RawImageCallback(const ::sensor_msgs::Image::ConstPtr& raw_image);
+    void RawImageCallback(const sensor_msgs::Image::ConstPtr& raw_image);
     
     // Receive a list of key points and descriptors, calculate camera pose
     // with the help of opencv
-    void CalculatePose();
+    void CalculatePose(cv_bridge::CvImageConstPtr cv_ptr);
     
     // Update the feature map
     void UpdateFeatureMap();
@@ -45,7 +47,7 @@ private:
     FeatureMap feature_map_;
     
     // trajectory
-    ::std::vector<::geometry_msgs::PoseStamped> camera_trajectory_;
+    ::std::vector<geometry_msgs::PoseStamped> camera_trajectory_;
 };
 
 } // namespace CameraLocalizationNode

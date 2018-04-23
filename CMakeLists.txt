@@ -128,8 +128,8 @@ include_directories(include
 #   src/${PROJECT_NAME}/camera_localization.cpp
 # )
 
-add_library(camera_localization src/localization_node.cc)
-
+# add_library(camera_localization src/localization_node.cc)
+add_library(simple_camera_localization src/simple_node.cc)
 
 
 ## Add cmake target dependencies of the library
@@ -145,7 +145,7 @@ add_library(camera_localization src/localization_node.cc)
 add_executable(camera_localization_node src/node_main.cc)
 target_link_libraries(camera_localization_node
     cv_bridge
-    camera_localization
+    simple_camera_localization
     ${catkin_LIBRARIES}
 )
 

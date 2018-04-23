@@ -5,23 +5,41 @@
 
 namespace CameraLocalization {
     
-CameraLocalizationNode::CameraLocalizationNode(int max_feature_num)
-    : max_feature_num_(max_feature_num), initialized_(false){
-        
-    GetParameters();
-    raw_image_subscriber_ = node_handle_.subscribe<sensor_msgs::Image>
-        ("/usb_cam/image_raw", 10, &CameraLocalizationNode::ImageCallback, this);
-    camera_pose_publisher_ = node_handle_.advertise<geometry_msgs::PoseStamped>("/pose", 10);
-        feature_detector_ = xfeatures2d::SURF::create();
-}
-    
+// Get paramters from rosparam server and pass them to parameters_
 void CameraLocalizationNode::GetParameters(){
-    if(node_handle_.getParam("",cx)){
+    if(node_handle_.getParam("/max_feature_num",parameter_.max_feature_num)){
+        std::cout<<"Fail to get parameter"<<std::endl;
+    }
+    if(node_handle_.getParam("/update_feature_num",parameter_.update_feature_num)){
+        std::cout<<"Fail to get parameter"<<std::endl;
+    }
+    if(node_handle_.getParam("/cx",parameter_.cx)){
+        std::cout<<"Fail to get parameter"<<std::endl;
+    }
+    if(node_handle_.getParam("/cy",parameter_.cy)){
+        std::cout<<"Fail to get parameter"<<std::endl;
+    }
+    if(node_handle_.getParam("/fx",parameter_.fx)){
+        std::cout<<"Fail to get parameter"<<std::endl;
+    }
+    if(node_handle_.getParam("/fy",parameter_.fy)){
         std::cout<<"Fail to get parameter"<<std::endl;
     }
 }
     
+// Constructor
+CameraLocalizationNode::CameraLocalizationNode() : initialized_(false){
+    GetParameters();
+    // ROS API
+    raw_image_subscriber_ = node_handle_.subscribe<sensor_msgs::Image>
+    ("/usb_cam/image_raw", 10, &CameraLocalizationNode::ImageCallback, this);
+    camera_pose_publisher_ = node_handle_.advertise<geometry_msgs::PoseStamped>("/pose", 10);
     
+    // Feature detector (SURF)
+    feature_detector_ = xfeatures2d::SURF::create();
+}
+    
+// Receive image message, transform into cv image and callback
 void CameraLocalizationNode::ImageCallback(const ::sensor_msgs::Image::ConstPtr& raw_image){
     // convert ros image to opencv image cv_ptr->image
     cv_bridge::CvImageConstPtr cv_ptr;
@@ -32,18 +50,17 @@ void CameraLocalizationNode::ImageCallback(const ::sensor_msgs::Image::ConstPtr&
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    
-    // Address the image
     AddressImage(cv_ptr);
 }
 
+// Main function to address the comming image
 void CameraLocalizationNode::AddressImage(cv_bridge::CvImageConstPtr cv_ptr){
     // Calculate key points
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat feature_descriptors;
     feature_detector_->detect(cv_ptr->image, keypoints);
     
-    // sort keypoints by response
+    // sort keypoints by response and only keep the keeps part ot them
     std::sort(keypoints.begin(), keypoints.end(),[](const cv::KeyPoint& a, const cv::KeyPoint& b){
         return a.response > b.response;});
     
@@ -88,7 +105,7 @@ void CameraLocalizationNode::AddressImage(cv_bridge::CvImageConstPtr cv_ptr){
     
     // Update Feature Map
     const int camera_pose_index = camera_trajectory_.size() - 1;
-    if(feature_map_.points.size()+feature_descriptors.size()<=max_feature_num){
+    if(parameter_.update_feature_num + feature_map_.points.size() <= parameter_.max_feature_num){
         for(int i=0;i<keypoints.size();++i){
             feature_map_.points.push_back(keypoints[i]);
             feature_map_.descriptors.push_back(feature_descriptors[i]);
@@ -102,8 +119,21 @@ void CameraLocalizationNode::AddressImage(cv_bridge::CvImageConstPtr cv_ptr){
         for(int i=0;i<keypoints.size();++i){
             scores.push_back(feature_map_.matched_time[i]*100000-history_time);
         }
-        
-        
+        sort(scores.begin(), scores.end());
+        const int scores_threshold = scores[parameters_.update_feature_num-1];
+        int i=0, count = 0;
+        while(i<feature_map_.keypoints.size()){
+            int score = feature_map_.matched_time[i]*100000-history_time;
+            if(score <= scores_threshold){
+                feature_map_.points[i] = keypoints[count];
+                feature_map_.descriptors[i] = feature_descriptors[i];
+                feature_map_.history_time[i] = 0;
+                feature_map_.matched_time[i] = 0;
+                feature_map_.image_index[i] = camera_pose_index;
+                ++count;
+            }
+            ++i;
+        }
     }
     
 }

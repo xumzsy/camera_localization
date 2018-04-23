@@ -1,4 +1,7 @@
 
+#ifndef localization_node_h
+#define localization_node_h
+
 #include <vector>
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
@@ -17,7 +20,12 @@ public:
     
 private:
     struct Parameters{
-        
+        double cx;
+        double cy;
+        double fx;
+        double fy;
+        int max_feature_num;
+        int update_feature_num;
     };
     
     
@@ -42,22 +50,19 @@ private:
     // Update the feature map
     void UpdateFeatureMap();
     
+    
+    // ROS API
     ros::NodeHandle node_handle_;
     ros::Subscriber raw_image_subscriber_;
     ros::Publisher camera_pose_publisher_;
-    cv::Ptr<Feature2D> feature_detector_;
+    
     
     // camera info (parameters)
-    double cx;
-    double cy;
-    double fx;
-    double fy;
-    
-    
-    const int max_feature_num_;
+    Parameters parameters_;
     bool initialized_;
     
     // feature map ? considering matching, how to maintain it
+    cv::Ptr<Feature2D> feature_detector_;
     FeatureMap feature_map_;
     
     // trajectory
@@ -65,3 +70,5 @@ private:
 };
 
 } // namespace CameraLocalizationNode
+
+#endif /* localization_node_h */

@@ -1,6 +1,7 @@
-
+#include <opencv2/features2d.h>
 #include <opencv2/xfeatures2d.h>
 #include <opencv2/calib3d.h>
+#include <math.h>
 #include "simple_node.h"
 
 namespace CameraLocalization {
@@ -9,10 +10,11 @@ SimpleNode::SimpleNode() : initialized_(false) {
     // ROS API
     raw_image_subscriber_ = node_handle_.subscribe<sensor_msgs::Image>
                             ("/usb_cam/image_raw", 10, &CameraLocalizationNode::ImageCallback, this);
-    camera_pose_publisher_ = node_handle_.advertise<geometry_msgs::PoseStamped>("/pose", 10);
+    camera_pose_publisher_ = node_handle_.advertise<geometry_msgs::PoseStamped>("/camera_pose", 10);
     
     // Feature detector (SURF)
     feature_detector_ = xfeatures2d::SURF::create();
+    descriptor_matcher_ = cv::FlannBasedMatcher::create();
 }
     
 void SimpleNode::ImageCallback(const ::sensor_msgs::Image::ConstPtr& image){
@@ -45,12 +47,13 @@ void SimpleNode::AddressImage(cv_bridge::CvImagePtr cv_ptr){
         initialized_ = true;
     } else{
         // calculate camera pose
-        cv::FlannBasedMatcher descriptor_matcher_;
-        std::vector<cv::DMatch> matches;
-        descriptor_matcher_.match(feature_descriptors, last_descriptors_, matches);
+        std::vector<std::vector<cv::DMatch>> matches;
+        descriptor_matcher_.knnMatch(feature_descriptors, last_descriptors_, matches, 2);
         
-        // filter matches
+        // filter matches by ratio bewteen best and second best match
         std::vector<cv::DMatch> good_matches;
+        FilterMatchesByRatio(matches, good_matches);
+        
         
         // find good points and essentialMat matrix
         std::vector<KeyPoint> last_good_points;
@@ -74,7 +77,11 @@ void SimpleNode::AddressImage(cv_bridge::CvImagePtr cv_ptr){
         cv::Mat t;
         cv::recoverPose(essential_matrix, good_points, last_good_points, camera_info_, R, t);
         
-        // transform R into querion
+        // transform R into quaterion
+        RotationMatToQuaternion(R, camera_pose.pose.orientation);
+        camera_pose.pose.position.x = t.at(0);
+        camera_pose.pose.position.y = t.at(1);
+        camera_pose.pose.position.z = t.at(2);
     }
     
     // Update trajectory and publish the pose
@@ -91,8 +98,24 @@ void SimpleNode::FilterKeyPoints(std::vector<cv::KeyPoint>& keypoints, int remai
               (const cv::KeyPoint& a, const cv::KeyPoint& b){return a.response > b.response;});
     while(keypoints.size() > remain_num) keypoints.pop_back();
 }
+    
+void SimpleNode::FilterMatchesByRatio(std::vector<std::vector<cv::DMatch>>& matches,
+                                      std::vector<cv::DMatch>& good_matches){
+    for(auto match:matches){
+        if(match.size()==2 && match.back().distance/match.front().distance < 0.6){
+            good_matches.push_back(match.front());
+        }
+    }
+}
 
-void InitializeIdentityPose(geometry_msgs::Pose& pose){
+void SimpleNode::RotationMatToQuaternion(cv::Mat& R, geometry_msgs::Quaternion& quaternion){
+    quaternion.w = sqrt(1 + R.at(0,0) + R.at(1,1) + R.at(2,2))/2;
+    quaternion.x = (R.at(2,1) - R.at(1,2))/(4*quaternion.w);
+    quaternion.y = (R.at(0,2) - R.at(2,0))/(4*quaternion.w);
+    quaternion.x = (R.at(1,0) - R.at(0,1))/(4*quaternion.w);
+}
+    
+void SimpleNode::InitializeIdentityPose(geometry_msgs::Pose& pose){
     pose.position.x = 0.0;
     pose.position.y = 0.0;
     pose.position.z = 0.0;

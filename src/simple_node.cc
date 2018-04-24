@@ -6,12 +6,19 @@
 
 namespace CameraLocalization {
     
-SimpleNode::SimpleNode() : initialized_(false) {
+    SimpleNode::SimpleNode() : initialized_(false), camera_info_(cv::Mat::zeros(3,3,cv::CV_64F)) {
     // ROS API
     raw_image_subscriber_ = node_handle_.subscribe<sensor_msgs::Image>
                             ("/usb_cam/image_raw", 10, &CameraLocalizationNode::ImageCallback, this);
     camera_pose_publisher_ = node_handle_.advertise<geometry_msgs::PoseStamped>("/camera_pose", 10);
     
+    // camera info (hard coded now)
+    camera_info_.at(0,0) = 0.0;   // fx
+    camera_info_.at(1,1) = 0.0;   // fy
+    camera_info_.at(0,2) = 0.0;   // cx
+    camera_info_.at(1,2) = 0.0;   // cy
+    camera_info_.at(2,2) = 1.0;
+        
     // Feature detector (SURF)
     feature_detector_ = xfeatures2d::SURF::create();
     descriptor_matcher_ = cv::FlannBasedMatcher::create();

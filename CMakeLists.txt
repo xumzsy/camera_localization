@@ -8,6 +8,7 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  tf
   geometry_msgs
   roscpp
   std_msgs
@@ -149,6 +150,10 @@ target_link_libraries(camera_localization_node
     ${catkin_LIBRARIES}
 )
 
+add_executable(sync_node src/node_sync.cc)
+target_link_libraries(sync_node
+    ${catkin_LIBRARIES}
+)
 
 
 ## Rename C++ executable without prefix

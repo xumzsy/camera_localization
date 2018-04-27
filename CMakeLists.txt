@@ -14,7 +14,17 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   cv_bridge
+  OpenCV
 )
+
+find_package(OpenCV 3 REQUIRED
+  COMPONENTS
+    opencv_core
+    opencv_imgproc
+    opencv_imgcodecs
+  CONFIG
+)
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -109,6 +119,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES camera_localization
 CATKIN_DEPENDS geometry_msgs roscpp opencv std_msgs sensor_msgs
+DEPENDS OpenCV
 #  DEPENDS system_lib
 )
 
@@ -117,7 +128,7 @@ CATKIN_DEPENDS geometry_msgs roscpp opencv std_msgs sensor_msgs
 ###########
 
 include_directories(include
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Specify additional locations of header files
@@ -153,6 +164,7 @@ target_link_libraries(camera_localization_node
 add_executable(sync_node src/node_sync.cc)
 target_link_libraries(sync_node
     ${catkin_LIBRARIES}
+    ${OpenCV_LIBRARIES}
 )
 
 

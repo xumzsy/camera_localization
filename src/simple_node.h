@@ -7,18 +7,22 @@
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv/cv.h>
-
+#include <opencv2/opencv.hpp>
+#include <opencv2/features2d.hpp>
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/calib3d.hpp>
 #include "geometry_msgs/PoseStamped.h"
 #include "sensor_msgs/Image.h"
 
 namespace CameraLocalization {
+class SimpleNode{
     
 public:
     SimpleNode();
 private:
     void ImageCallback(const ::sensor_msgs::Image::ConstPtr& image);
     
-    void AddressImage(cv_bridge::CvImagePtr cv_ptr);
+    void AddressImage(cv_bridge::CvImageConstPtr cv_ptr);
     
     void FilterKeyPoints(std::vector<cv::KeyPoint>& keypoints, int remain_num);
     
@@ -42,11 +46,11 @@ private:
     std::vector<cv::KeyPoint> last_keypoints_;
     cv::Mat last_descriptors_;
     
-    cv::Ptr<Feature2D> feature_detector_;
-    cv::Ptr<DescriptorMatcher> descriptor_matcher_;
+    cv::Ptr<cv::Feature2D> feature_detector_;
+    cv::Ptr<cv::DescriptorMatcher> descriptor_matcher_;
     // trajectory
     std::vector<geometry_msgs::PoseStamped> camera_trajectory_;
-    
+};
 } // namespace CameraLocalization
 
 

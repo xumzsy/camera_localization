@@ -1,5 +1,5 @@
 
-#include <opencv2/xfeatures2d.h>
+#include <opencv2/xfeatures2d.hpp>
 
 #include "localization_node.h"
 
